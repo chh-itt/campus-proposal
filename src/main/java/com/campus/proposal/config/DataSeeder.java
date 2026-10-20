@@ -45,6 +45,7 @@ public class DataSeeder implements CommandLineRunner {
         User jiaowu = user("jiaowu", "刘敏", Role.DEPT, "教务处");
         userRepository.saveAll(List.of(xiaoming, xiaohong, staff, houqin, jiaowu));
 
+        // 先建 5 条处于不同阶段的提案(不引用关系尚未持久化,留痕统一在 saveAll 之后补写)
         LocalDateTime base = LocalDateTime.now().minusDays(6);
         int year = base.getYear();
 
@@ -59,30 +60,18 @@ public class DataSeeder implements CommandLineRunner {
                 "三号教学楼 302、305 自习室插座数量少,晚间很多同学笔记本没电只能提前离开。\n"
                         + "建议排查并加装地面插座或排插位。",
                 xiaohong, null, ProposalStatus.ACCEPTED, base.plusDays(1));
-        log(p2, "提交", xiaohong, null, base.plusDays(1));
-        log(p2, "立案", staff, "情况属实,建议后勤部门实地查看", base.plusDays(2));
-        p2.setUpdatedAt(base.plusDays(2));
 
         // 3. 办理中
         Proposal p3 = proposal("TA-" + year + "-0003", "一号食堂二楼高峰期排队过长",
                 "11:40-12:10 一号食堂二楼只有 4 个窗口营业,排队经常超过 15 分钟。\n"
                         + "建议高峰期临时增开窗口或引导分流到三楼。",
                 xiaoming, houqin, ProposalStatus.ASSIGNED, base.plusDays(2));
-        log(p3, "提交", xiaoming, null, base.plusDays(2));
-        log(p3, "立案", staff, "转后勤管理处核实", base.plusDays(2).plusHours(3));
-        log(p3, "分办", staff, "后勤管理处·王建国", base.plusDays(3));
-        p3.setUpdatedAt(base.plusDays(3));
 
         // 4. 已答复·待评价
         Proposal p4 = proposal("TA-" + year + "-0004", "图书馆闭馆时间能否延长至 23:00",
                 "期末季图书馆 22:00 闭馆,很多同学希望能延长到 23:00,并保留夜间自习区。",
                 xiaohong, jiaowu, ProposalStatus.REPLIED, base.plusDays(3));
         p4.setReply("已与图书馆协调:自下周一起闭馆时间延长至 23:00 试行一个月,一楼 104 自习区同步开放,试行结束后根据使用情况评估是否长期执行。");
-        log(p4, "提交", xiaohong, null, base.plusDays(3));
-        log(p4, "立案", staff, null, base.plusDays(3).plusHours(2));
-        log(p4, "分办", staff, "教务处·刘敏", base.plusDays(4));
-        log(p4, "答复", jiaowu, "下周一起试行延长闭馆", base.plusDays(5));
-        p4.setUpdatedAt(base.plusDays(5));
 
         // 5. 已办结
         Proposal p5 = proposal("TA-" + year + "-0005", "操场夜间照明灯多盏损坏",
@@ -91,15 +80,34 @@ public class DataSeeder implements CommandLineRunner {
         p5.setReply("后勤已安排电工检修,损坏灯组于本周三全部更换完毕,并增设夜间巡检。");
         p5.setRating(5);
         p5.setEvaluation("三天就修好了,效率很高,点赞!");
+
+        proposalRepository.saveAll(List.of(p1, p2, p3, p4, p5)); // 先持久化提案,拿到主键
+
+        // 再补写办理留痕(必须引用已保存的提案,否则 Hibernate 报 TransientPropertyValueException)
+        log(p1, "提交", xiaoming, null, base);
+
+        log(p2, "提交", xiaohong, null, base.plusDays(1));
+        log(p2, "立案", staff, "情况属实,建议后勤部门实地查看", base.plusDays(2));
+        p2.setUpdatedAt(base.plusDays(2));
+
+        log(p3, "提交", xiaoming, null, base.plusDays(2));
+        log(p3, "立案", staff, "转后勤管理处核实", base.plusDays(2).plusHours(3));
+        log(p3, "分办", staff, "后勤管理处·王建国", base.plusDays(3));
+        p3.setUpdatedAt(base.plusDays(3));
+
+        log(p4, "提交", xiaohong, null, base.plusDays(3));
+        log(p4, "立案", staff, null, base.plusDays(3).plusHours(2));
+        log(p4, "分办", staff, "教务处·刘敏", base.plusDays(4));
+        log(p4, "答复", jiaowu, "下周一起试行延长闭馆", base.plusDays(5));
+        p4.setUpdatedAt(base.plusDays(5));
+
         log(p5, "提交", xiaoming, null, base.plusDays(1));
         log(p5, "立案", staff, null, base.plusDays(1).plusHours(4));
         log(p5, "分办", staff, "后勤管理处·王建国", base.plusDays(2));
         log(p5, "答复", houqin, "本周三前完成检修", base.plusDays(3));
         log(p5, "评价", xiaoming, "满意度 5 星", base.plusDays(4));
         p5.setUpdatedAt(base.plusDays(4));
-
-        proposalRepository.saveAll(List.of(p1, p2, p3, p4, p5));
-        log(p1, "提交", xiaoming, null, base);
+        proposalRepository.saveAll(List.of(p2, p3, p4, p5)); // 回写各提案的最终 updatedAt
     }
 
     private User user(String username, String name, Role role, String department) {
