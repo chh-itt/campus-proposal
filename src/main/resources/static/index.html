@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>校园提案督办平台</title>
+<style>
+  :root {
+    --brand: #2f7d6d; --brand-dark: #24604f; --brand-light: #e6f2ef;
+    --ink: #22302c; --muted: #7d8a86; --line: #dde6e3; --bg: #f4f7f6;
+    --danger: #b3433b; --warn: #b7791f; --info: #2b6cb0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: var(--bg); color: var(--ink); }
+  button { cursor: pointer; }
+  input, textarea, select { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; width: 100%; background: #fff; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--brand-light); border-color: var(--brand); }
+  textarea { resize: vertical; min-height: 110px; }
+  label { font-size: 13px; color: var(--muted); display: block; margin: 12px 0 5px; }
+  .btn { border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; background: var(--brand); color: #fff; }
+  .btn:hover { background: var(--brand-dark); }
+  .btn.ghost { background: #fff; color: var(--brand); border: 1px solid var(--brand); }
+  .btn.danger { background: var(--danger); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ---------- 登录页 ---------- */
+  #loginPage { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-card { background: #fff; border-radius: 16px; padding: 36px; width: 400px; box-shadow: 0 10px 40px rgba(47,125,109,.12); }
+  .login-card h1 { font-size: 22px; color: var(--brand); margin-bottom: 4px; }
+  .login-card .sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+  .demo-accounts { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line); }
+  .demo-accounts p { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .demo-accounts .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .demo-accounts button { font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--brand-light); color: var(--brand-dark); }
+
+  /* ---------- 主框架 ---------- */
+  #app { display: none; max-width: 1080px; margin: 0 auto; padding: 0 16px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 14px; border-bottom: 2px solid var(--brand); margin-bottom: 20px; }
+  header .logo { font-size: 19px; font-weight: 700; color: var(--brand); }
+  header .who { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 12px; }
+  .role-tag { background: var(--brand-light); color: var(--brand-dark); font-size: 12px; padding: 2px 9px; border-radius: 20px; }
+  nav { display: flex; gap: 6px; margin-bottom: 20px; }
+  nav button { border: none; background: transparent; padding: 9px 18px; font-size: 14px; border-radius: 8px; color: var(--muted); }
+  nav button.active { background: var(--brand); color: #fff; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ---------- 总览 ---------- */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .stat-card .num { font-size: 26px; font-weight: 700; color: var(--brand-dark); }
+  .stat-card .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ---------- 列表 ---------- */
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar button { font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--line); background: #fff; color: var(--muted); }
+  .toolbar button.on { border-color: var(--brand); background: var(--brand-light); color: var(--brand-dark); }
+  .p-item { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 15px 18px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 14px; cursor: pointer; }
+  .p-item:hover { border-color: var(--brand); box-shadow: 0 2px 10px rgba(47,125,109,.08); }
+  .p-item .t { font-weight: 600; margin-bottom: 3px; }
+  .p-item .meta { font-size: 12px; color: var(--muted); }
+  .badge { font-size: 12px; padding: 3px 11px; border-radius: 20px; white-space: nowrap; }
+
+  /* ---------- 详情 ---------- */
+  .detail-head { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; margin-bottom: 14px; }
+  .detail-head h2 { font-size: 18px; margin: 8px 0 10px; }
+  .detail-head .content { white-space: pre-wrap; font-size: 14px; line-height: 1.7; color: #45524e; }
+  .detail-head .kv { font-size: 13px; color: var(--muted); }
+  .reply-box { margin-top: 14px; background: var(--brand-light); border-left: 3px solid var(--brand); border-radius: 0 8px 8px 0; padding: 12px 14px; font-size: 14px; white-space: pre-wrap; }
+  .rating-line { margin-top: 10px; font-size: 13px; color: var(--warn); }
+  .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; align-items: start; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .card h3 { font-size: 14px; color: var(--brand-dark); margin-bottom: 12px; }
+  .timeline { list-style: none; }
+  .timeline li { position: relative; padding: 0 0 16px 20px; border-left: 2px solid var(--line); margin-left: 6px; }
+  .timeline li:last-child { border-left-color: transparent; padding-bottom: 2px; }
+  .timeline li::before { content: ""; position: absolute; left: -6px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+  .timeline .act { font-size: 13px; font-weight: 600; }
+  .timeline .who { font-size: 12px; color: var(--brand-dark); }
+  .timeline .note { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .timeline .time { font-size: 11px; color: #a8b3af; margin-top: 2px; }
+  .empty { text-align: center; color: var(--muted); padding: 50px 0; font-size: 14px; }
+  .actions-box .hint { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .toast { position: fixed; top: 22px; left: 50%; transform: translateX(-50%); background: #2c3a35; color: #fff; padding: 11px 22px; border-radius: 10px; font-size: 14px; display: none; z-index: 99; max-width: 90vw; }
+  .toast.err { background: var(--danger); }
+  .back { font-size: 13px; color: var(--brand); background: none; border: none; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div id="loginPage">
+  <div class="login-card">
+    <h1>校园提案督办平台</h1>
+    <div class="sub">提案提交 · 审查立案 · 分办办理 · 答复评价 · 全程留痕</div>
+    <label>用户名</label><input id="loginUser" placeholder="请输入用户名">
+    <label>密码</label><input id="loginPass" type="password" placeholder="请输入密码">
+    <div style="margin-top:18px"><button class="btn" style="width:100%" onclick="doLogin()">登 录</button></div>
+    <div id="loginErr" style="color:var(--danger);font-size:13px;margin-top:10px;display:none"></div>
+    <div class="demo-accounts">
+      <p>演示账号(密码均为 123456,点击自动填入):</p>
+      <div class="row">
+        <button onclick="fill('xiaoming')">学生 张晓宇</button>
+        <button onclick="fill('staff')">提案办 李静</button>
+        <button onclick="fill('houqin')">后勤处 王建国</button>
+        <button onclick="fill('jiaowu')">教务处 刘敏</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 主应用 -->
+<div id="app">
+  <header>
+    <div class="logo">校园提案督办平台</div>
+    <div class="who"><span class="role-tag" id="whoRole"></span><span id="whoName"></span><button class="btn ghost" style="padding:6px 14px;font-size:13px" onclick="doLogout()">退出</button></div>
+  </header>
+  <nav>
+    <button data-tab="dash" class="active" onclick="switchTab('dash')">总览</button>
+    <button data-tab="list" onclick="switchTab('list')">提案列表</button>
+    <button data-tab="create" id="tabCreate" style="display:none" onclick="switchTab('create')">提交提案</button>
+  </nav>
+
+  <!-- 总览 -->
+  <div class="page active" id="page-dash">
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="card"><h3>各阶段提案分布</h3><div id="statusBars"></div></div>
+  </div>
+
+  <!-- 列表 -->
+  <div class="page" id="page-list">
+    <div class="toolbar" id="statusFilter"></div>
+    <div id="pList"></div>
+  </div>
+
+  <!-- 提交 -->
+  <div class="page" id="page-create">
+    <div class="card" style="max-width:640px">
+      <h3>提交新提案</h3>
+      <label>标题(4-100 字)</label><input id="cTitle" placeholder="一句话概括问题或建议">
+      <label>具体内容(5-2000 字,建议写清现状、问题、建议)</label><textarea id="cContent"></textarea>
+      <div style="margin-top:16px"><button class="btn" onclick="doCreate()">提交提案</button></div>
+    </div>
+  </div>
+
+  <!-- 详情 -->
+  <div class="page" id="page-detail">
+    <button class="back" onclick="switchTab('list')">← 返回列表</button>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const S = { me: null, filter: "", proposals: [], detail: null, deptUsers: [] };
+const $ = id => document.getElementById(id);
+const STATUS = {
+  SUBMITTED: ["已提交·待审查", "#8a8f98"],
+  ACCEPTED:  ["已立案·待分办", "#2f7d6d"],
+  ASSIGNED:  ["办理中",        "#b7791f"],
+  REPLIED:   ["已答复·待评价", "#2b6cb0"],
+  CLOSED:    ["已办结",        "#2f855a"],
+  REJECTED:  ["不予立案",      "#b3433b"]
+};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtTime = s => s ? new Date(s.replace(" ", "T")).toLocaleString("zh-CN", {month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit"}) : "";
+const badge = st => { const [label, color] = STATUS[st] || [st, "#888"]; return `<span class="badge" style="background:${color}1a;color:${color}">${label}</span>`; };
+const stars = n => n ? "★".repeat(n) + "☆".repeat(5 - n) : "";
+
+function toast(msg, err) { const t = $("toast"); t.textContent = msg; t.className = "toast" + (err ? " err" : ""); t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", 2600); }
+
+async function api(path, opts = {}) {
+  const res = await fetch("/api" + path, {
+    method: opts.method || "GET",
+    headers: { "Content-Type": "application/json" },
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  let data = null;
+  try { data = await res.json(); } catch (_) {}
+  if (res.status === 401 && S.me) { S.me = null; showLogin(); throw new Error("会话已过期,请重新登录"); }
+  if (!res.ok) throw new Error(data && data.message || ("请求失败(" + res.status + ")"));
+  return data;
+}
+
+/* ---------- 登录 ---------- */
+function fill(u) { $("loginUser").value = u; $("loginPass").value = "123456"; }
+async function doLogin() {
+  const username = $("loginUser").value.trim(), password = $("loginPass").value;
+  try {
+    const data = await api("/auth/login", { method: "POST", body: { username, password } });
+    S.me = data.user;
+    $("loginErr").style.display = "none";
+    enterApp();
+  } catch (e) { $("loginErr").textContent = e.message; $("loginErr").style.display = "block"; }
+}
+$("loginPass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+
+async function doLogout() { try { await api("/auth/logout", { method: "POST" }); } catch (_) {} showLogin(); }
+
+function showLogin() { $("app").style.display = "none"; $("loginPage").style.display = "flex"; }
+function enterApp() {
+  $("loginPage").style.display = "none"; $("app").style.display = "block";
+  $("whoName").textContent = S.me.name + (S.me.department ? " · " + S.me.department : "");
+  const roleText = { PROPOSER: "学生提案人", STAFF: "提案工作办公室", DEPT: "承办部门" }[S.me.role];
+  $("whoRole").textContent = roleText;
+  $("tabCreate").style.display = S.me.role === "PROPOSER" ? "" : "none";
+  switchTab("dash");
+}
+
+/* ---------- 标签页 ---------- */
+function switchTab(tab) {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  if (tab === "dash")   { $("page-dash").classList.add("active"); loadStats(); }
+  if (tab === "list")   { $("page-list").classList.add("active"); renderFilter(); loadList(); }
+  if (tab === "create") { $("page-create").classList.add("active"); }
+  if (tab === "detail") { $("page-detail").classList.add("active"); }
+}
+
+/* ---------- 总览 ---------- */
+async function loadStats() {
+  try {
+    const st = await api("/stats");
+    const cells = [["total", "提案总数"], ["closedCount", "已办结"], ["avgRating", "平均满意度"], ["avgHandleDays", "平均办结天数(天)"]];
+    $("statGrid").innerHTML = cells.map(([k, l]) => `<div class="stat-card"><div class="num">${st[k]}</div><div class="lbl">${l}</div></div>`).join("");
+    const max = Math.max(1, ...Object.values(st.byStatus));
+    $("statusBars").innerHTML = Object.entries(st.byStatus).map(([k, n]) => {
+      const [label, color] = STATUS[k];
+      return `<div style="display:flex;align-items:center;gap:10px;margin:9px 0;font-size:13px">
+        <span style="width:110px;color:var(--muted)">${label}</span>
+        <div style="flex:1;background:var(--bg);border-radius:6px;height:16px;overflow:hidden">
+          <div style="width:${n / max * 100}%;background:${color};height:100%;border-radius:6px;min-width:${n ? "10px" : "0"}"></div>
+        </div><span style="width:26px;text-align:right">${n}</span></div>`;
+    }).join("");
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- 列表 ---------- */
+function renderFilter() {
+  const opts = [["", "全部"], ...Object.entries(STATUS).map(([k, v]) => [k, v[0]])];
+  $("statusFilter").innerHTML = opts.map(([k, l]) =>
+    `<button class="${S.filter === k ? "on" : ""}" onclick="S.filter='${k}';renderFilter();loadList()">${l}</button>`).join("");
+}
+async function loadList() {
+  try {
+    S.proposals = await api("/proposals" + (S.filter ? "?status=" + S.filter : ""));
+    $("pList").innerHTML = S.proposals.length ? S.proposals.map(p => `
+      <div class="p-item" onclick="openDetail(${p.id})">
+        <div><div class="t">${esc(p.title)}</div>
+        <div class="meta">${esc(p.code)} · ${esc(p.proposer.name)} · ${fmtTime(p.createdAt)}${p.handler ? " · 承办:" + esc(p.handler.name) : ""}</div></div>
+        ${badge(p.status)}
+      </div>`).join("") : `<div class="empty">暂无提案</div>`;
+  } catch (e) { toast(e.message, true); }
+}
+
+async function doCreate() {
+  const title = $("cTitle").value.trim(), content = $("cContent").value.trim();
+  try {
+    await api("/proposals", { method: "POST", body: { title, content } });
+    $("cTitle").value = ""; $("cContent").value = "";
+    toast("提案已提交,等待提案工作办公室审查");
+    switchTab("list");
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- 详情 ---------- */
+async function openDetail(id) {
+  try {
+    S.detail = await api("/proposals/" + id);
+    if (S.me.role === "STAFF" && S.detail.proposal.status === "ACCEPTED" && !S.deptUsers.length) {
+      S.deptUsers = await api("/users?role=DEPT");
+    }
+    switchTab("detail");
+    renderDetail();
+  } catch (e) { toast(e.message, true); }
+}
+
+function renderDetail() {
+  const p = S.detail.proposal, logs = S.detail.logs;
+  const proposerBox = p.proposer && p.proposer.id === S.me.id;
+  const handlerBox = p.handler && p.handler.id === S.me.id;
+
+  let action = "";
+  if (S.me.role === "STAFF" && p.status === "SUBMITTED") {
+    action = actionBox(`立案,或不予立案退回提案人`, `
+      <label>审查意见(可选)</label><textarea id="aNote" placeholder="说明立案理由或退回原因"></textarea>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn" onclick="doReview(true)">同意立案</button>
+        <button class="btn danger" onclick="doReview(false)">不予立案</button>
+      </div>`);
+  } else if (S.me.role === "STAFF" && p.status === "ACCEPTED") {
+    action = actionBox(`将提案分办到承办部门经办人`, `
+      <label>选择承办部门</label>
+      <select id="aDept">${S.deptUsers.map(u => `<option value="${u.id}">${esc(u.name)} · ${esc(u.department)}</option>`).join("")}</select>
+      <div style="margin-top:14px"><button class="btn" onclick="doAssign()">确认分办</button></div>`);
+  } else if (S.me.role === "DEPT" && handlerBox && p.status === "ASSIGNED") {
+    action = actionBox(`填写办理答复,提交后提案人将收到通知并评价`, `
+      <label>答复内容(5-2000 字)</label><textarea id="aReply" placeholder="说明办理措施与结果"></textarea>
+      <div style="margin-top:14px"><button class="btn" onclick="doReply()">提交答复</button></div>`);
+  } else if (S.me.role === "PROPOSER" && proposerBox && p.status === "REPLIED") {
+    action = actionBox(`对办理结果进行评价,评价后提案办结`, `
+      <label>满意度</label>
+      <select id="aRating">${[5, 4, 3, 2, 1].map(n => `<option value="${n}">${stars(n)}(${n} 星)</option>`).join("")}</select>
+      <label>评价意见(可选)</label><textarea id="aComment" style="min-height:70px"></textarea>
+      <div style="margin-top:14px"><button class="btn" onclick="doEvaluate()">提交评价并办结</button></div>`);
+  } else {
+    const tip = { SUBMITTED: "等待提案工作办公室审查", ACCEPTED: "等待分办到承办部门", ASSIGNED: "承办部门办理中,请耐心等待答复", REPLIED: "请提案人评价后办结", CLOSED: "流程已结束", REJECTED: "流程已结束" }[p.status];
+    action = `<div class="card"><h3>当前无可执行操作</h3><div class="hint">${tip}</div></div>`;
+  }
+
+  $("detailBody").innerHTML = `
+    <div class="detail-head">
+      <div style="display:flex;justify-content:space-between;align-items:center">${badge(p.status)}<span class="kv">${esc(p.code)}</span></div>
+      <h2>${esc(p.title)}</h2>
+      <div class="kv">提案人:${esc(p.proposer.name)} · 提交于 ${fmtTime(p.createdAt)}${p.handler ? " · 承办:" + esc(p.handler.name) + "(" + esc(p.handler.department) + ")" : ""}</div>
+      <div class="content" style="margin-top:10px">${esc(p.content)}</div>
+      ${p.reply ? `<div class="reply-box"><b>承办答复</b><br>${esc(p.reply)}</div>` : ""}
+      ${p.rating ? `<div class="rating-line">提案人评价:${stars(p.rating)}${p.evaluation ? " — " + esc(p.evaluation) : ""}</div>` : ""}
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>办理留痕</h3>
+        <ul class="timeline">${logs.map(l => `
+          <li><div class="act">${esc(l.action)} <span class="who">${esc(l.operator.name)}</span></div>
+          ${l.note ? `<div class="note">${esc(l.note)}</div>` : ""}
+          <div class="time">${fmtTime(l.createdAt)}</div></li>`).join("")}
+        </ul>
+      </div>
+      <div class="actions-box">${action}</div>
+    </div>`;
+}
+
+function actionBox(hint, inner) {
+  return `<div class="card"><h3>可执行操作</h3><div class="hint">${hint}</div>${inner}</div>`;
+}
+async function refreshAfterAction(id) { S.detail = await api("/proposals/" + id); renderDetail(); loadStats(); }
+async function doReview(accept) {
+  try { await api(`/proposals/${S.detail.proposal.id}/review`, { method: "POST", body: { accept, note: $("aNote").value.trim() } });
+    toast(accept ? "已立案" : "已退回"); await refreshAfterAction(S.detail.proposal.id);
+  } catch (e) { toast(e.message, true); }
+}
+async function doAssign() {
+  try { await api(`/proposals/${S.detail.proposal.id}/assign`, { method: "POST", body: { deptUserId: Number($("aDept").value) } });
+    toast("已分办"); await refreshAfterAction(S.detail.proposal.id);
+  } catch (e) { toast(e.message, true); }
+}
+async function doReply() {
+  try { await api(`/proposals/${S.detail.proposal.id}/reply`, { method: "POST", body: { reply: $("aReply").value.trim() } });
+    toast("答复已提交"); await refreshAfterAction(S.detail.proposal.id);
+  } catch (e) { toast(e.message, true); }
+}
+async function doEvaluate() {
+  try { await api(`/proposals/${S.detail.proposal.id}/evaluate`, { method: "POST", body: { rating: Number($("aRating").value), comment: $("aComment").value.trim() } });
+    toast("评价成功,提案已办结"); await refreshAfterAction(S.detail.proposal.id);
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- 启动:尝试恢复会话 ---------- */
+(async function boot() {
+  try { const d = await api("/auth/me"); S.me = d.user; enterApp(); } catch (_) { showLogin(); }
+})();
+</script>
+</body>
+</html>
