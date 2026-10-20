@@ -268,12 +268,13 @@ async function doCreate() {
 }
 
 /* ---------- 详情 ---------- */
+async function ensureDeptUsers() {
+  if (S.me.role === "STAFF" && !S.deptUsers.length) S.deptUsers = await api("/users?role=DEPT");
+}
 async function openDetail(id) {
   try {
     S.detail = await api("/proposals/" + id);
-    if (S.me.role === "STAFF" && S.detail.proposal.status === "ACCEPTED" && !S.deptUsers.length) {
-      S.deptUsers = await api("/users?role=DEPT");
-    }
+    await ensureDeptUsers();
     switchTab("detail");
     renderDetail();
   } catch (e) { toast(e.message, true); }
@@ -336,7 +337,7 @@ function renderDetail() {
 function actionBox(hint, inner) {
   return `<div class="card"><h3>可执行操作</h3><div class="hint">${hint}</div>${inner}</div>`;
 }
-async function refreshAfterAction(id) { S.detail = await api("/proposals/" + id); renderDetail(); loadStats(); }
+async function refreshAfterAction(id) { S.detail = await api("/proposals/" + id); await ensureDeptUsers(); renderDetail(); loadStats(); }
 async function doReview(accept) {
   try { await api(`/proposals/${S.detail.proposal.id}/review`, { method: "POST", body: { accept, note: $("aNote").value.trim() } });
     toast(accept ? "已立案" : "已退回"); await refreshAfterAction(S.detail.proposal.id);
